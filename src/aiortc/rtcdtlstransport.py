@@ -356,6 +356,7 @@ class RTCDtlsTransport(AsyncIOEventEmitter):
         self._stats_id = "transport_" + str(id(self))
         self._task: Optional[asyncio.Future[None]] = None
         self._transport = transport
+        self._remote_certificates = None
 
         # counters
         self.__rx_bytes = 0
@@ -406,6 +407,12 @@ class RTCDtlsTransport(AsyncIOEventEmitter):
         return RTCDtlsParameters(
             fingerprints=self.__local_certificate.getFingerprints()
         )
+
+    def getRemoteCertificates(self) -> List[RTCCertificate]:
+        """
+        Returns the value of [[RemoteCertificates]].
+        """
+        return self._remote_certificates
 
     async def start(self, remoteParameters: RTCDtlsParameters) -> None:
         """
@@ -458,6 +465,7 @@ class RTCDtlsTransport(AsyncIOEventEmitter):
 
         # check remote fingerprint
         x509 = lib.SSL_get_peer_certificate(self.ssl)
+        self._remote_certificates = [RTCCertificate(key=None, cert=x509)]
         remote_fingerprint = certificate_digest(x509)
         fingerprint_is_valid = False
         for f in remoteParameters.fingerprints:
